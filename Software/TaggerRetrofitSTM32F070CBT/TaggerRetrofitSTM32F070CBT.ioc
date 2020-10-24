@@ -1,6 +1,7 @@
 #MicroXplorer Configuration settings - do not modify
-FREERTOS.IPParameters=Tasks01
-FREERTOS.Tasks01=defaultTask,24,128,StartDefaultTask,Default,NULL,Dynamic,NULL,NULL
+FREERTOS.FootprintOK=true
+FREERTOS.IPParameters=Tasks01,FootprintOK
+FREERTOS.Tasks01=defaultTask,24,128,StartDefaultTask,Default,NULL,Dynamic,NULL,NULL;emitTag,24,128,StartEmitTag,Default,NULL,Dynamic,NULL,NULL
 File.Version=6
 GPIO.groupedBy=Group By Peripherals
 KeepUserPlacement=false
@@ -136,7 +137,7 @@ ProjectManager.StackSize=0x400
 ProjectManager.TargetToolchain=STM32CubeIDE
 ProjectManager.ToolChainLocation=
 ProjectManager.UnderRoot=true
-ProjectManager.functionlistsort=1-MX_GPIO_Init-GPIO-false-HAL-true,2-SystemClock_Config-RCC-false-HAL-false
+ProjectManager.functionlistsort=1-MX_GPIO_Init-GPIO-false-HAL-true,2-SystemClock_Config-RCC-false-HAL-false,3-MX_TIM3_Init-TIM3-false-HAL-true
 RCC.AHBFreq_Value=48000000
 RCC.APB1Freq_Value=48000000
 RCC.APB1TimFreq_Value=48000000

@@ -50,6 +50,13 @@ const osThreadAttr_t defaultTask_attributes = {
   .priority = (osPriority_t) osPriorityNormal,
   .stack_size = 128 * 4
 };
+/* Definitions for emitTag */
+osThreadId_t emitTagHandle;
+const osThreadAttr_t emitTag_attributes = {
+  .name = "emitTag",
+  .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 128 * 4
+};
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -59,6 +66,7 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_TIM3_Init(void);
 void StartDefaultTask(void *argument);
+void StartEmitTag(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -124,6 +132,9 @@ int main(void)
   /* Create the thread(s) */
   /* creation of defaultTask */
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+
+  /* creation of emitTag */
+  emitTagHandle = osThreadNew(StartEmitTag, NULL, &emitTag_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -304,6 +315,57 @@ void StartDefaultTask(void *argument)
     osDelay(500);
   }
   /* USER CODE END 5 */
+}
+
+/* USER CODE BEGIN Header_StartEmitTag */
+/**
+* @brief Function implementing the emitTag thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartEmitTag */
+void StartEmitTag(void *argument)
+{
+  /* USER CODE BEGIN StartEmitTag */
+  /* Infinite loop */
+  for(;;)
+  {
+	HAL_GPIO_WritePin(IR_LED1_GPIO_Port, IR_LED1_Pin, GPIO_PIN_SET);
+    osDelay(100);
+
+    HAL_GPIO_WritePin(IR_LED2_GPIO_Port, IR_LED2_Pin, GPIO_PIN_SET);
+    osDelay(100);
+
+    HAL_GPIO_WritePin(IR_LED3_GPIO_Port, IR_LED3_Pin, GPIO_PIN_SET);
+    osDelay(100);
+
+    HAL_GPIO_WritePin(IR_LED4_GPIO_Port, IR_LED4_Pin, GPIO_PIN_SET);
+    osDelay(100);
+
+    HAL_GPIO_WritePin(IR_LED5_GPIO_Port, IR_LED5_Pin, GPIO_PIN_SET);
+    osDelay(100);
+
+    HAL_GPIO_WritePin(IR_LED6_GPIO_Port, IR_LED6_Pin, GPIO_PIN_SET);
+    osDelay(100);
+
+    HAL_GPIO_WritePin(IR_LED7_GPIO_Port, IR_LED7_Pin, GPIO_PIN_SET);
+    osDelay(100);
+
+    HAL_GPIO_WritePin(IR_LED8_GPIO_Port, IR_LED8_Pin, GPIO_PIN_SET);
+    osDelay(100);
+
+    HAL_GPIO_WritePin(IR_LED1_GPIO_Port, IR_LED1_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(IR_LED2_GPIO_Port, IR_LED2_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(IR_LED3_GPIO_Port, IR_LED3_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(IR_LED4_GPIO_Port, IR_LED4_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(IR_LED5_GPIO_Port, IR_LED5_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(IR_LED6_GPIO_Port, IR_LED6_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(IR_LED7_GPIO_Port, IR_LED7_Pin, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(IR_LED8_GPIO_Port, IR_LED8_Pin, GPIO_PIN_RESET);
+    osDelay(100);
+
+  }
+  /* USER CODE END StartEmitTag */
 }
 
 /**
