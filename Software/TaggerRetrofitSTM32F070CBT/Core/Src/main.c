@@ -23,7 +23,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "queue.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -57,6 +57,13 @@ const osThreadAttr_t emitTag_attributes = {
   .priority = (osPriority_t) osPriorityNormal,
   .stack_size = 128 * 4
 };
+/* Definitions for LED */
+osThreadId_t LEDHandle;
+const osThreadAttr_t LED_attributes = {
+  .name = "LED",
+  .priority = (osPriority_t) osPriorityNormal,
+  .stack_size = 128 * 4
+};
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -67,6 +74,7 @@ static void MX_GPIO_Init(void);
 static void MX_TIM3_Init(void);
 void StartDefaultTask(void *argument);
 void StartEmitTag(void *argument);
+void StartLEDFlash(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -135,6 +143,9 @@ int main(void)
 
   /* creation of emitTag */
   emitTagHandle = osThreadNew(StartEmitTag, NULL, &emitTag_attributes);
+
+  /* creation of LED */
+  LEDHandle = osThreadNew(StartLEDFlash, NULL, &LED_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -366,6 +377,36 @@ void StartEmitTag(void *argument)
 
   }
   /* USER CODE END StartEmitTag */
+}
+
+/* USER CODE BEGIN Header_StartLEDFlash */
+/**
+* @brief Function implementing the LED thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartLEDFlash */
+void StartLEDFlash(void *argument)
+{
+  /* USER CODE BEGIN StartLEDFlash */
+  /* Infinite loop */
+
+	QueueHandle_t xQueue1;
+	xQueue1 = xQueueCreate( 10, sizeof( unsigned long ) );       //should the size be infinite?
+	if(xQueueReceive(xQueue1, pvBuffer,(portTickType)10)==false) //not sure what to put for pointer and tick type
+  {
+	  HAL_GPIO_TogglePin(HeartbeatLED_GPIO_Port, HeartbeatLED_Pin);
+	      osDelay(50);
+  }
+  	if(xQueueReceive(xQueue1, pvBuffer,(portTickType)10)==true) //not sure what to put for pointer and tick type
+  {
+	  HAL_GPIO_TogglePin(HeartbeatLED_GPIO_Port, HeartbeatLED_Pin);
+	      osDelay(200);
+  }
+
+
+
+	/* USER CODE END StartLEDFlash */
 }
 
 /**
