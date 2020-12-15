@@ -1,0 +1,5 @@
+LTTO_IR_TX.c:16:6:LTTO_IR_TX_Tick1MS	8	static
+LTTO_IR_TX.c:46:6:LTTO_IR_TX_QueueSignal	24	static
+LTTO_IR_TX.c:58:6:LTTO_IR_TX_QueueRawSignature	16	static
+LTTO_IR_TX.c:67:6:LTTO_IR_TX_QueueSignature	16	static
+LTTO_IR_TX.c:76:6:LTTO_IR_TX_Busy	8	static

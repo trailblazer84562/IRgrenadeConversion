@@ -1,21 +1,21 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * <h2><center>&copy; Copyright (c) 2020 STMicroelectronics.
-  * All rights reserved.</center></h2>
-  *
-  * This software component is licensed by ST under BSD 3-Clause license,
-  * the "License"; You may not use this file except in compliance with the
-  * License. You may obtain a copy of the License at:
-  *                        opensource.org/licenses/BSD-3-Clause
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * @file           : main.c
+ * @brief          : Main program body
+ ******************************************************************************
+ * @attention
+ *
+ * <h2><center>&copy; Copyright (c) 2020 STMicroelectronics.
+ * All rights reserved.</center></h2>
+ *
+ * This software component is licensed by ST under BSD 3-Clause license,
+ * the "License"; You may not use this file except in compliance with the
+ * License. You may obtain a copy of the License at:
+ *                        opensource.org/licenses/BSD-3-Clause
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -24,10 +24,31 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "queue.h"
+#include "stdbool.h"
+
+#include "../../Libraries/ltto-ir/LTTO_IR_DataStructures.h"
+#include "../../Libraries/ltto-ir/LTTO_IR_RX_AutoConvert.h"
+#include "../../Libraries/ltto-ir/LTTO_IR_RX.h"
+#include "../../Libraries/ltto-ir/LTTO_IR_TX.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
+typedef enum {
+	PROGRAM = 1,
+	COUNTDOWN = 2,
+	DETONATE = 3,
+	SHUTDOWN = 4
+} StateMachineState;
+
+typedef enum {
+	ULTRA = 1,
+	SLOW_BLINK = 2,
+	MEDIUM_BLINK = 3,
+	FAST_BLINK = 4,
+	SOLID_LED = 5,
+	OCCASIONAL_BLIP = 6
+} LED_BlinkProfile;
 
 /* USER CODE END PTD */
 
@@ -42,6 +63,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 TIM_HandleTypeDef htim3;
+TIM_HandleTypeDef htim6;
 
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -64,14 +86,26 @@ const osThreadAttr_t LED_attributes = {
   .priority = (osPriority_t) osPriorityNormal,
   .stack_size = 128 * 4
 };
+/* Definitions for LED_BlinkStyle */
+osMessageQueueId_t LED_BlinkStyleHandle;
+const osMessageQueueAttr_t LED_BlinkStyle_attributes = {
+  .name = "LED_BlinkStyle"
+};
+/* Definitions for tagSignature */
+osMessageQueueId_t tagSignatureHandle;
+const osMessageQueueAttr_t tagSignature_attributes = {
+  .name = "tagSignature"
+};
 /* USER CODE BEGIN PV */
-
+StateMachineState presentState = PROGRAM;
+LTTO_IR_SIGNATURE_t tempSignature;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_TIM3_Init(void);
+static void MX_TIM6_Init(void);
 void StartDefaultTask(void *argument);
 void StartEmitTag(void *argument);
 void StartLEDFlash(void *argument);
@@ -114,7 +148,13 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_TIM3_Init();
+  MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
+
+	//Start Timer
+	HAL_TIM_Base_Start_IT(&htim6);
+	// Start the 38kHz PWM output
+	HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
 
   /* USER CODE END 2 */
 
@@ -122,19 +162,26 @@ int main(void)
   osKernelInitialize();
 
   /* USER CODE BEGIN RTOS_MUTEX */
-  /* add mutexes, ... */
+	/* add mutexes, ... */
   /* USER CODE END RTOS_MUTEX */
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
-  /* add semaphores, ... */
+	/* add semaphores, ... */
   /* USER CODE END RTOS_SEMAPHORES */
 
   /* USER CODE BEGIN RTOS_TIMERS */
-  /* start timers, add new ones, ... */
+	/* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
 
+  /* Create the queue(s) */
+  /* creation of LED_BlinkStyle */
+  LED_BlinkStyleHandle = osMessageQueueNew (1, sizeof(LED_BlinkProfile), &LED_BlinkStyle_attributes);
+
+  /* creation of tagSignature */
+  tagSignatureHandle = osMessageQueueNew (1, sizeof(LTTO_IR_SIGNATURE_t), &tagSignature_attributes);
+
   /* USER CODE BEGIN RTOS_QUEUES */
-  /* add queues, ... */
+	/* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
@@ -148,8 +195,12 @@ int main(void)
   LEDHandle = osThreadNew(StartLEDFlash, NULL, &LED_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
-  /* add threads, ... */
+	/* add threads, ... */
   /* USER CODE END RTOS_THREADS */
+
+  /* USER CODE BEGIN RTOS_EVENTS */
+	/* add events, ... */
+  /* USER CODE END RTOS_EVENTS */
 
   /* Start scheduler */
   osKernelStart();
@@ -157,12 +208,12 @@ int main(void)
   /* We should never get here as control is now taken by the scheduler */
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
-  {
+	while (1)
+	{
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-  }
+	}
   /* USER CODE END 3 */
 }
 
@@ -224,7 +275,7 @@ static void MX_TIM3_Init(void)
   htim3.Instance = TIM3;
   htim3.Init.Prescaler = 0;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 65535;
+  htim3.Init.Period = 1895;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
@@ -238,7 +289,7 @@ static void MX_TIM3_Init(void)
     Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 0;
+  sConfigOC.Pulse = 948;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
@@ -249,6 +300,36 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 2 */
   HAL_TIM_MspPostInit(&htim3);
+
+}
+
+/**
+  * @brief TIM6 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM6_Init(void)
+{
+
+  /* USER CODE BEGIN TIM6_Init 0 */
+
+  /* USER CODE END TIM6_Init 0 */
+
+  /* USER CODE BEGIN TIM6_Init 1 */
+
+  /* USER CODE END TIM6_Init 1 */
+  htim6.Instance = TIM6;
+  htim6.Init.Prescaler = 40-1;
+  htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim6.Init.Period = 200-1;
+  htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM6_Init 2 */
+
+  /* USER CODE END TIM6_Init 2 */
 
 }
 
@@ -311,105 +392,192 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN Header_StartDefaultTask */
 /**
-  * @brief  Function implementing the defaultTask thread.
-  * @param  argument: Not used
-  * @retval None
-  */
+ * @brief  Function implementing the defaultTask thread.
+ * @param  argument: Not used
+ * @retval None
+ */
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
-  /* Infinite loop */
-  for(;;)
-  {
-	  HAL_GPIO_TogglePin(HeartbeatLED_GPIO_Port, HeartbeatLED_Pin);
-    osDelay(500);
-  }
+	HAL_GPIO_WritePin(PowerCtrl_GPIO_Port, PowerCtrl_Pin, GPIO_PIN_SET);
+	LED_BlinkProfile blinkStyle;
+	/* Infinite loop */
+	for(;;)
+	{
+		switch(presentState){
+		case PROGRAM:
+			if(LTTO_IR_RX_AC_NewSingleSignatureReady()) {
+				LTTO_IR_RX_AC_GetSingleSignature(&tempSignature);
+				if(tempSignature.signatureType == LTTO_IR_SIGNATURE_TYPE_TAG) {
+					//Save it and move on to the waiting
+					//And let's go ahead and boost the damage, 'cus that's fun.
+					//tempSignature.data |= 0x03;
+					presentState = COUNTDOWN;
+				}
+				LTTO_IR_RX_AC_Clear();
+			}
+			break;
+		case COUNTDOWN:
+			blinkStyle = SLOW_BLINK;
+			xQueueSendToBack(LED_BlinkStyleHandle, &blinkStyle, 0);
+			osDelay(5000);
+
+			blinkStyle = MEDIUM_BLINK;
+			xQueueSendToBack(LED_BlinkStyleHandle, &blinkStyle, 0);
+			osDelay(3000);
+
+			blinkStyle = FAST_BLINK;
+			xQueueSendToBack(LED_BlinkStyleHandle, &blinkStyle, 0);
+			osDelay(2000);
+
+			presentState = DETONATE;
+			break;
+		case DETONATE:
+			xQueueSendToBack(tagSignatureHandle, &tempSignature, 0);
+			blinkStyle = SOLID_LED;
+			xQueueSendToBack(LED_BlinkStyleHandle, &blinkStyle, 0);
+			osDelay(5);
+
+			//Wait for transmit to pass the semaphore back
+			xQueueReceive(tagSignatureHandle, &tempSignature, portMAX_DELAY);
+			presentState = SHUTDOWN;
+			break;
+		case SHUTDOWN:
+			blinkStyle = OCCASIONAL_BLIP;
+			xQueueSendToBack(LED_BlinkStyleHandle, &blinkStyle, 0);
+			HAL_GPIO_WritePin(PowerCtrl_GPIO_Port, PowerCtrl_Pin, GPIO_PIN_RESET);
+			break;
+		}
+		osDelay(10);
+	}
   /* USER CODE END 5 */
 }
 
 /* USER CODE BEGIN Header_StartEmitTag */
 /**
-* @brief Function implementing the emitTag thread.
-* @param argument: Not used
-* @retval None
-*/
+ * @brief Function implementing the emitTag thread.
+ * @param argument: Not used
+ * @retval None
+ */
 /* USER CODE END Header_StartEmitTag */
 void StartEmitTag(void *argument)
 {
   /* USER CODE BEGIN StartEmitTag */
-  /* Infinite loop */
-  for(;;)
-  {
-	HAL_GPIO_WritePin(IR_LED1_GPIO_Port, IR_LED1_Pin, GPIO_PIN_SET);
-    osDelay(100);
+	/* Infinite loop */
+	for(;;)
+	{
+		//Our TX buffer
+		int LTTO_IR_TX_txPulseMS[21];
+		int LTTO_IR_TX_txPulseCount = 0;
+		LTTO_IR_SIGNATURE_t signatureToSend;
 
-    HAL_GPIO_WritePin(IR_LED2_GPIO_Port, IR_LED2_Pin, GPIO_PIN_SET);
-    osDelay(100);
+		GPIO_TypeDef* portArray[8] = {IR_LED1_GPIO_Port, IR_LED2_GPIO_Port, IR_LED3_GPIO_Port,
+				IR_LED4_GPIO_Port, IR_LED5_GPIO_Port, IR_LED6_GPIO_Port, IR_LED7_GPIO_Port, IR_LED8_GPIO_Port};
+		uint16_t pinArray [8] = {IR_LED1_Pin, IR_LED2_Pin, IR_LED3_Pin, IR_LED4_Pin, IR_LED5_Pin,
+				IR_LED6_Pin, IR_LED7_Pin, IR_LED8_Pin };
 
-    HAL_GPIO_WritePin(IR_LED3_GPIO_Port, IR_LED3_Pin, GPIO_PIN_SET);
-    osDelay(100);
-
-    HAL_GPIO_WritePin(IR_LED4_GPIO_Port, IR_LED4_Pin, GPIO_PIN_SET);
-    osDelay(100);
-
-    HAL_GPIO_WritePin(IR_LED5_GPIO_Port, IR_LED5_Pin, GPIO_PIN_SET);
-    osDelay(100);
-
-    HAL_GPIO_WritePin(IR_LED6_GPIO_Port, IR_LED6_Pin, GPIO_PIN_SET);
-    osDelay(100);
-
-    HAL_GPIO_WritePin(IR_LED7_GPIO_Port, IR_LED7_Pin, GPIO_PIN_SET);
-    osDelay(100);
-
-    HAL_GPIO_WritePin(IR_LED8_GPIO_Port, IR_LED8_Pin, GPIO_PIN_SET);
-    osDelay(100);
-
-    HAL_GPIO_WritePin(IR_LED1_GPIO_Port, IR_LED1_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(IR_LED2_GPIO_Port, IR_LED2_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(IR_LED3_GPIO_Port, IR_LED3_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(IR_LED4_GPIO_Port, IR_LED4_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(IR_LED5_GPIO_Port, IR_LED5_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(IR_LED6_GPIO_Port, IR_LED6_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(IR_LED7_GPIO_Port, IR_LED7_Pin, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(IR_LED8_GPIO_Port, IR_LED8_Pin, GPIO_PIN_RESET);
-    osDelay(100);
-
-  }
+		xQueueReceive(tagSignatureHandle, &signatureToSend, portMAX_DELAY);
+		LTTO_IR_CONV_SignatureToPulses(&signatureToSend, &LTTO_IR_TX_txPulseMS, &LTTO_IR_TX_txPulseCount);
+		//LTTO_IR_SIGNATURE_t *sourceSignature, int destinationPulseTickMSBuffer[], int *destinationPulseCount
+		for(int detonationRound = 0; detonationRound < 3; detonationRound++){ //Fire off 3 sets of 8 shots
+			for(int emitter = 0; emitter < 8; emitter++) {
+				for(int pulseIndex = 0; pulseIndex < LTTO_IR_TX_txPulseCount; pulseIndex++){
+					if(pulseIndex % 2 == 0) {
+						//Odd index, active IR period
+						HAL_GPIO_WritePin(portArray[emitter], pinArray[emitter], GPIO_PIN_SET);
+						osDelay(LTTO_IR_TX_txPulseMS[pulseIndex]);
+					}
+					else{
+						//Even index, inactive IR period
+						HAL_GPIO_WritePin(portArray[emitter], pinArray[emitter], GPIO_PIN_RESET);
+						osDelay(LTTO_IR_TX_txPulseMS[pulseIndex]);
+					}
+				}
+				osDelay(100); //100 ms inter-tag spacing
+			}
+		}
+		xQueueSendToBack(tagSignatureHandle, &tempSignature, 0); //Send back Mutex to shutdown
+		osDelay(1000); //Sleep so other tasks can grab the Mutex
+	}
   /* USER CODE END StartEmitTag */
 }
 
 /* USER CODE BEGIN Header_StartLEDFlash */
 /**
-* @brief Function implementing the LED thread.
-* @param argument: Not used
-* @retval None
-*/
+ * @brief Function implementing the LED thread.
+ * @param argument: Not used
+ * @retval None
+ */
 /* USER CODE END Header_StartLEDFlash */
 void StartLEDFlash(void *argument)
 {
   /* USER CODE BEGIN StartLEDFlash */
-  /* Infinite loop */
+	LED_BlinkProfile blinkStyle = ULTRA;
+	uint16_t onTime;
+	uint16_t offTime;
+	uint32_t prevTime;
+	bool LEDisOn;
 
-	QueueHandle_t xQueue1;
-	xQueue1 = xQueueCreate( 10, sizeof( unsigned long ) );       //should the size be infinite?
-	if(xQueueReceive(xQueue1, pvBuffer,(portTickType)10)==false) //not sure what to put for pointer and tick type
-  {
-	  HAL_GPIO_TogglePin(HeartbeatLED_GPIO_Port, HeartbeatLED_Pin);
-	      osDelay(50);
-  }
-  	if(xQueueReceive(xQueue1, pvBuffer,(portTickType)10)==true) //not sure what to put for pointer and tick type
-  {
-	  HAL_GPIO_TogglePin(HeartbeatLED_GPIO_Port, HeartbeatLED_Pin);
-	      osDelay(200);
-  }
+	xQueueSendToBack(LED_BlinkStyleHandle, &blinkStyle, 0);
+	/* Infinite loop */
+	for(;;)
+	{
+		if(xQueueReceive(LED_BlinkStyleHandle, &blinkStyle, 0)){
+			switch(blinkStyle){
+			case ULTRA:
+				onTime = 20;
+				offTime = 20;
+				break;
+			case SLOW_BLINK:
+				onTime = 500;
+				offTime = 500;
+				break;
+			case MEDIUM_BLINK:
+				onTime = 200;
+				offTime = 200;
+				break;
+			case FAST_BLINK:
+				onTime = 100;
+				offTime = 100;
+				break;
+			case SOLID_LED:
+				onTime = 65000;
+				offTime = 0;
+				break;
+			case OCCASIONAL_BLIP:
+				onTime = 20;
+				offTime = 1000;
+			}
+			prevTime = HAL_GetTick();
+			//Start with LED on
+			LEDisOn = true;
+			HAL_GPIO_WritePin(greenLED_GPIO_Port, greenLED_Pin, GPIO_PIN_RESET); //Turn on the LED (inverted)
+			HAL_GPIO_WritePin(HeartbeatLED_GPIO_Port, HeartbeatLED_Pin, GPIO_PIN_SET); //Turn on the heartbeat LED
+		}
+		if(LEDisOn){
+			if(HAL_GetTick()-prevTime > onTime){ //If on-time has elapsed
+				HAL_GPIO_WritePin(greenLED_GPIO_Port, greenLED_Pin, GPIO_PIN_SET); //Turn off the LED (inverted)
+				HAL_GPIO_WritePin(HeartbeatLED_GPIO_Port, HeartbeatLED_Pin, GPIO_PIN_RESET); //Turn off the heartbeat LED
+				LEDisOn = false;
+				prevTime = HAL_GetTick(); //Reset timer so we can time the off time
+			}
+		}
+		else{
+			if(HAL_GetTick()-prevTime > offTime){ //If off-time has elapsed
+				HAL_GPIO_WritePin(greenLED_GPIO_Port, greenLED_Pin, GPIO_PIN_RESET); //Turn on the LED (inverted)
+				HAL_GPIO_WritePin(HeartbeatLED_GPIO_Port, HeartbeatLED_Pin, GPIO_PIN_SET); //Turn on the heartbeat LED
+				LEDisOn = true;
+				prevTime = HAL_GetTick(); //Reset timer so we can time the off time
+			}
+		}
+		osDelay(10);
+	}
 
-
-
-	/* USER CODE END StartLEDFlash */
+  /* USER CODE END StartLEDFlash */
 }
 
-/**
+ /**
   * @brief  Period elapsed callback in non blocking mode
   * @note   This function is called  when TIM17 interrupt took place, inside
   * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
@@ -421,11 +589,48 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* USER CODE BEGIN Callback 0 */
 
+	static uint16_t IR_RX_SensorTicks = 0;
+	static bool IR_RX_LastState;
+	static bool IR_RX_currentState;
   /* USER CODE END Callback 0 */
   if (htim->Instance == TIM17) {
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
+	if (htim == &htim6 )  { // 0.2ms Interrupt
+		if(HAL_GPIO_ReadPin(RX_GPIO_Port, RX_Pin) == GPIO_PIN_SET){
+			IR_RX_currentState = true;
+		}
+		else{
+			IR_RX_currentState = false;
+		}
+		//Handle IR reception
+		//If the state is the same as last time
+		if(IR_RX_currentState == IR_RX_LastState) {
+			//If this pulse has gone longer than 10ms, and we haven't already decided we've timed out...
+			if((IR_RX_SensorTicks / LTTO_IR_RX_TICKS_PER_MS) > 10 && IR_RX_SensorTicks != IR_RX_SENSOR_TICKS_GAVE_UP) {
+				//Pass it into the RX processor
+				//Invert the sensor state, since IR receivers are active-low
+				LTTO_IR_RX_AC_NewIRPulseReceived(IR_RX_SensorTicks, !IR_RX_LastState);
+				//And mark this pulse as having already been processed
+				IR_RX_SensorTicks = IR_RX_SENSOR_TICKS_GAVE_UP;
+			} else {
+				//Otherwise, increment the counter
+				IR_RX_SensorTicks++;
+			}
+		} else {
+			//If we haven't already processed this pulse due to timing out...
+			if(IR_RX_SensorTicks != IR_RX_SENSOR_TICKS_GAVE_UP) {
+				//Pass it into the processor.
+				//Invert the state, since IR receivers are active-low.
+				LTTO_IR_RX_AC_NewIRPulseReceived(IR_RX_SensorTicks, !IR_RX_LastState);
+			}
+			//And reset the timer
+			IR_RX_SensorTicks = 0;
+			//And store the current state of the pin
+			IR_RX_LastState = IR_RX_currentState;
+		}
+	}
 
   /* USER CODE END Callback 1 */
 }
@@ -437,7 +642,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
+	/* User can add his own implementation to report the HAL error return state */
 
   /* USER CODE END Error_Handler_Debug */
 }
@@ -453,7 +658,7 @@ void Error_Handler(void)
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
-  /* User can add his own implementation to report the file name and line number,
+	/* User can add his own implementation to report the file name and line number,
      tex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
   /* USER CODE END 6 */
 }

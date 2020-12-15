@@ -1,0 +1,8 @@
+LTTO_IR_RX_AutoConvert.c:7:6:LTTO_IR_RX_AC_NewIRPulseReceived	16	static
+LTTO_IR_RX_AutoConvert.c:41:6:LTTO_IR_RX_AC_NewRawSignatureReady	8	static
+LTTO_IR_RX_AutoConvert.c:45:6:LTTO_IR_RX_AC_GetRawSignature	16	static
+LTTO_IR_RX_AutoConvert.c:53:6:LTTO_IR_RX_AC_NewSingleSignatureReady	8	static
+LTTO_IR_RX_AutoConvert.c:57:6:LTTO_IR_RX_AC_GetSingleSignature	16	static
+LTTO_IR_RX_AutoConvert.c:62:6:LTTO_IR_RX_AC_NewMultibyteReady	8	static
+LTTO_IR_RX_AutoConvert.c:66:6:LTTO_IR_RX_AC_GetMultibyte	24	static
+LTTO_IR_RX_AutoConvert.c:76:6:LTTO_IR_RX_AC_Clear	8	static

@@ -1,0 +1,12 @@
+; DO NOT EDIT (unless you know what you are doing)
+;
+; This subdirectory is a git "subrepo", and this file is maintained by the
+; git-subrepo command. See https://github.com/git-commands/git-subrepo#readme
+;
+[subrepo]
+	remote = git@bitbucket.org:izzy84075/ltto-ir.git
+	branch = master
+	commit = db7486235a03e3c92627fcac6c40a6b1b966fdc7
+	parent = 55462e3d75e3cc0faad6d76f48f750808cde2ea6
+	method = merge
+	cmdver = 0.4.0

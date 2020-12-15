@@ -89,7 +89,7 @@ void Error_Handler(void);
 #define RX_Pin GPIO_PIN_12
 #define RX_GPIO_Port GPIOA
 /* USER CODE BEGIN Private defines */
-
+#define IR_RX_SENSOR_TICKS_GAVE_UP  10000
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

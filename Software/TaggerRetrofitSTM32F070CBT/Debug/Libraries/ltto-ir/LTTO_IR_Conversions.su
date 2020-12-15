@@ -1,0 +1,16 @@
+LTTO_IR_Conversions.c:3:6:LTTO_IR_CONV_PulsesToRawSignature	32	static
+LTTO_IR_Conversions.c:72:6:LTTO_IR_CONV_RawSignatureToPulses	32	static
+LTTO_IR_Conversions.c:143:6:LTTO_IR_CONV_RawSignatureToSignature	16	static
+LTTO_IR_Conversions.c:191:6:LTTO_IR_CONV_SignatureToRawSignature	16	static
+LTTO_IR_Conversions.c:247:6:LTTO_IR_CONV_PulsesToSignature	40	static
+LTTO_IR_Conversions.c:257:6:LTTO_IR_CONV_SignatureToPulses	40	static
+LTTO_IR_Conversions.c:263:6:LTTO_IR_CONV_MultibyteToSignature	24	static
+LTTO_IR_Conversions.c:278:6:LTTO_IR_CONV_MultibyteToRawSignature	40	static
+LTTO_IR_Conversions.c:284:6:LTTO_IR_CONV_MultibyteToPulses	40	static
+LTTO_IR_Conversions.c:290:6:LTTO_IR_CONV_MultibyteChecksumToSignature	16	static
+LTTO_IR_Conversions.c:295:6:LTTO_IR_CONV_MultibyteChecksumToRawSignature	32	static
+LTTO_IR_Conversions.c:301:6:LTTO_IR_CONV_MultibyteChecksumToPulses	40	static
+LTTO_IR_Conversions.c:307:6:LTTO_IR_CONV_ClearMultibyte	16	static
+LTTO_IR_Conversions.c:313:6:LTTO_IR_CONV_AddSignatureToMultibyte	24	static
+LTTO_IR_Conversions.c:349:6:LTTO_IR_CONV_AddDataToMultibyte	16	static
+LTTO_IR_Conversions.c:355:6:LTTO_IR_CONV_CheckMultibyteComplete	16	static
