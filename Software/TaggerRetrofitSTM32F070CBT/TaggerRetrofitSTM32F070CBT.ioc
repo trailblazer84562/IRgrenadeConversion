@@ -2,7 +2,7 @@
 FREERTOS.FootprintOK=true
 FREERTOS.IPParameters=Tasks01,FootprintOK,Queues01
 FREERTOS.Queues01=LED_BlinkStyle,1,LED_BlinkProfile,0,Dynamic,NULL,NULL;tagSignature,1,LTTO_IR_SIGNATURE_t,0,Dynamic,NULL,NULL
-FREERTOS.Tasks01=defaultTask,24,128,StartDefaultTask,Default,NULL,Dynamic,NULL,NULL;emitTag,24,128,StartEmitTag,Default,NULL,Dynamic,NULL,NULL;LED,24,128,StartLEDFlash,Default,NULL,Dynamic,NULL,NULL
+FREERTOS.Tasks01=defaultTask,24,128,StartDefaultTask,Default,NULL,Dynamic,NULL,NULL;emitTag,32,128,StartEmitTag,Default,NULL,Dynamic,NULL,NULL;LED,24,128,StartLEDFlash,Default,NULL,Dynamic,NULL,NULL;buttonMonitor,8,128,StartButtonMonitor,Default,NULL,Dynamic,NULL,NULL
 File.Version=6
 GPIO.groupedBy=Group By Peripherals
 KeepUserPlacement=false
