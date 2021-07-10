@@ -600,7 +600,8 @@ void StartLEDFlash(void *argument)
 void StartButtonMonitor(void *argument)
 {
   /* USER CODE BEGIN StartButtonMonitor */
-	int resetCount = 30;
+	int resetCount = 30; //for button push
+	int failToProgramCount = 60 * 10; //Shutdown if not programmed within 60s
 	int interval = 100; //ms
 	int currentCount = resetCount;
 	/* Infinite loop */
@@ -612,7 +613,10 @@ void StartButtonMonitor(void *argument)
 		else{
 			currentCount = resetCount; //reset the countdown
 		}
-		if(currentCount <= 0){
+		if(presentState == PROGRAM){
+			failToProgramCount--;
+		}
+		if(currentCount <= 0 || failToProgramCount <= 0){
 			presentState = SHUTDOWN; //kill the power
 		}
 		osDelay(interval);

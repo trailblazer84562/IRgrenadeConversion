@@ -59,8 +59,8 @@ all: main-build
 main-build: TaggerRetrofitSTM32F070CBT.elf secondary-outputs
 
 # Tool invocations
-TaggerRetrofitSTM32F070CBT.elf: $(OBJS) $(USER_OBJS) C:\Users\micro\OneDrive\Desktop\IRgrenadeConversion\Software\TaggerRetrofitSTM32F070CBT\STM32F070CBTX_FLASH.ld
-	arm-none-eabi-gcc -o "TaggerRetrofitSTM32F070CBT.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0 -T"C:\Users\micro\OneDrive\Desktop\IRgrenadeConversion\Software\TaggerRetrofitSTM32F070CBT\STM32F070CBTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="TaggerRetrofitSTM32F070CBT.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+TaggerRetrofitSTM32F070CBT.elf: $(OBJS) $(USER_OBJS) C:\Users\micro\Desktop\IRgrenadeConversion\Software\TaggerRetrofitSTM32F070CBT\STM32F070CBTX_FLASH.ld
+	arm-none-eabi-gcc -o "TaggerRetrofitSTM32F070CBT.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0 -T"C:\Users\micro\Desktop\IRgrenadeConversion\Software\TaggerRetrofitSTM32F070CBT\STM32F070CBTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="TaggerRetrofitSTM32F070CBT.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
